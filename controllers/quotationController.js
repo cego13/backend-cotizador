@@ -3,6 +3,7 @@ const Quotation = require("../models/Quotation");
 const PDFDocument = require("pdfkit");
 const axios = require("axios");
 
+
 // 🧩 Validación de request
 const handleValidation = (req) => {
   const errors = validationResult(req);
@@ -120,20 +121,32 @@ exports.generateQuotationPDF = async (req, res, next) => {
 
     // === Encabezado ===
     const renderHeader = () => {
-      doc.rect(0, 0, doc.page.width, 70).fill("#1b5e20");
-      doc.fillColor("#fff").font("Helvetica-Bold").fontSize(20)
-        .text(`COTIZACIÓN N° ${quotation.quotationNumber}`, 40, 25);
-      doc.font("Helvetica").fontSize(10)
-        .text(`Granada, ${fechaFormateada}`, 400, 45, { align: "right" });
-      if (logoBuffer) doc.image(logoBuffer, 500, 5, { width: 50 });
-      if (logoBuffer) {
-        doc.save();
-        doc.opacity(0.08);
-        doc.image(logoBuffer, (doc.page.width - 300) / 2, (doc.page.height - 300) / 2, { width: 300 });
-        doc.restore();
-      }
-      doc.moveDown(2);
-    };
+  // Fondo verde
+  doc.rect(0, 0, doc.page.width, 80).fill("#1b5e20");
+
+  // Logo (izquierda)
+  if (logoBuffer) {
+    doc.image(logoBuffer, 40, 10, { width: 70, height: 70, fit: [70, 70] });
+  }
+
+  // Texto de cotización y fecha (derecha)
+  doc.fillColor("#fff");
+  doc.font("Helvetica-Bold").fontSize(18)
+    .text(`COTIZACIÓN N° ${quotation.quotationNumber}`, 150, 25, { align: "right" });
+
+  doc.font("Helvetica").fontSize(10)
+    .text(`${fechaFormateada}`, 150, 50, { align: "right" });
+
+  // Marca de agua con logo al fondo (si existe)
+  if (logoBuffer) {
+    doc.save();
+    doc.opacity(0.08);
+    doc.image(logoBuffer, (doc.page.width - 300) / 2, (doc.page.height - 300) / 2, { width: 300 });
+    doc.restore();
+  }
+
+  doc.moveDown(2);
+};
     renderHeader();
     doc.on("pageAdded", renderHeader);
 
@@ -174,11 +187,12 @@ exports.generateQuotationPDF = async (req, res, next) => {
     }
 
    // === TABLA DE PRODUCTOS (continua sin repetir encabezado) ===
+// === TABLA DE PRODUCTOS (con líneas de columna y filas) ===
 const drawTable = (startY) => {
   const colX = { desc: 50, qty: 320, unit: 390, total: 470 };
   const colW = { desc: 270, qty: 60, unit: 70, total: 80 };
 
-  // Dibujar encabezado solo una vez
+  // === Encabezado de tabla ===
   doc.save();
   doc.rect(colX.desc, startY, 500, 22).fill("#1b5e20");
   doc.restore();
@@ -191,6 +205,7 @@ const drawTable = (startY) => {
 
   let yPos = startY + 22;
 
+  // === Filas de productos ===
   quotation.items.forEach((item, index) => {
     const desc = item.description || "";
     const longDesc = item.longDescription || "";
@@ -203,27 +218,44 @@ const drawTable = (startY) => {
     const longDescHeight = longDesc ? doc.heightOfString(longDesc, textOptions) : 0;
     const rowHeight = descHeight + longDescHeight + 8;
 
-    // Si la fila no cabe, agregar nueva página con margen superior
+    // Salto de página si la fila no cabe
     if (yPos + rowHeight > 750) {
       doc.addPage();
-      yPos = 100; // margen superior nuevo para no superponerse con encabezado
+      yPos = 100;
     }
 
     // Fondo alternado
     if (index % 2 === 0) {
       doc.save();
-doc.opacity(0.2); // más bajo = más transparente
-if (index % 2 === 0) doc.rect(colX.desc, yPos, 500, rowHeight).fill("#f9f9f9");
-doc.restore();
-doc.opacity(1);
+      doc.opacity(0.2);
+      doc.rect(colX.desc, yPos, 500, rowHeight).fill("#f9f9f9");
+      doc.restore();
+      doc.opacity(1);
     }
 
-    // Bordes de fila
+    // === Bordes de fila ===
     doc.strokeColor("#ddd").lineWidth(0.5)
       .rect(colX.desc, yPos, 500, rowHeight)
       .stroke();
 
-    // Texto
+    // === Bordes de columna ===
+    const colLines = [
+      colX.desc,                       // izquierda de la tabla
+      colX.qty,                        // línea entre desc y qty
+      colX.unit,                       // línea entre qty y unit
+      colX.total,                      // línea entre unit y total
+      colX.total + colW.total          // derecha final de la tabla
+    ];
+
+    colLines.forEach(x => {
+      doc.moveTo(x, yPos)
+         .lineTo(x, yPos + rowHeight)
+         .strokeColor("#ddd")
+         .lineWidth(0.5)
+         .stroke();
+    });
+
+    // === Texto de cada celda ===
     doc.font("Helvetica-Bold").fontSize(10).fillColor("#000")
       .text(desc.toUpperCase(), colX.desc + 5, yPos + 3, textOptions);
 
@@ -239,6 +271,19 @@ doc.opacity(1);
 
     yPos += rowHeight;
   });
+
+  // === Líneas verticales finales hasta el borde inferior de la tabla ===
+  const tableBottom = yPos;
+  const colLines = [
+    colX.desc,
+    colX.qty,
+    colX.unit,
+    colX.total,
+    colX.total + colW.total
+  ];
+
+  
+  
 
   return yPos;
 };
@@ -293,11 +338,38 @@ y = drawTable(y);
     doc.fontSize(10);
     doc.text(rep.email || "", 40, y + 30);
     doc.text(`Contacto: ${rep.phone || ""}`, 40, y + 45);
+    doc.image(logoBuffer, 50,y += 55, { width: 70, height: 70, fit: [60, 60] });
+    
+          // === Pie de página ===
+      const drawFooter = () => {
+        const footerY = doc.page.height - 60;
 
+        // Línea verde
+        doc
+          .moveTo(50, footerY)
+          .lineTo(doc.page.width - 50, footerY)
+          .strokeColor("#1b5e20")
+          .stroke();
+
+        // Texto centrado
+        const footerText = `${quotation.company.name} ${new Date().getFullYear()}`;
+        const textWidth = doc.widthOfString(footerText);
+        const textX = (doc.page.width - textWidth) / 2;
+
+        doc
+          .fontSize(10)
+          .fillColor("#000000")
+          .text(footerText, textX, footerY + 5);
+      };
+
+      // 🔹 Dibuja el pie en la primera página
+      drawFooter();
+
+      // 🔹 Dibuja el pie también en las siguientes (si las hay)
+      doc.on("pageAdded", drawFooter);
+          
     doc.end();
   } catch (err) {
     next(err);
   }
 };
-
-
