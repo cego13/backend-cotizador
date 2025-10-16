@@ -169,11 +169,24 @@ exports.generateQuotationPDF = async (req, res, next) => {
       doc.font("Helvetica-Bold").text(quotation.client.name.toUpperCase(), 40, y);
       y += 25;
     }
-    doc.font("Helvetica").text("ESTIMADO/A:", 40, y);
+
+    // *** MODIFICACIÓN AQUÍ ***
+    // Si hay un cargo, lo mostramos como "ATENCIÓN:" o "DIRIGIDO A:"
+    if (quotation.client?.contactPosition) {
+        // Mostramos el cargo en negrita
+        doc.font("Helvetica").text(quotation.client.contactPosition.toUpperCase(), 40, y);
+        y += 15;
+    } else {
+        // Si no hay cargo, volvemos al saludo simple "ESTIMADO/A:"
+        doc.font("Helvetica").text("ESTIMADO/A:", 40, y);
+        y += 15;
+    }
+
+    // Mostramos el nombre del contacto (si existe)
     if (quotation.client?.contactName) {
-      y += 15;
       doc.font("Helvetica-Bold").text(quotation.client.contactName.toUpperCase(), 40, y);
     }
+    // *** FIN MODIFICACIÓN ***
 
     y += 25;
     doc.font("Helvetica").text("Cordial saludo.", 40, y);
