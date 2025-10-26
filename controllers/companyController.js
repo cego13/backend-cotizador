@@ -59,7 +59,6 @@ exports.getCompanyForPDF = async (req, res, next) => {
         signatureUrl: company.representative?.signatureUrl || ''
       }
     };
-
     res.json(pdfData);
   } catch (err) { next(err); }
 };

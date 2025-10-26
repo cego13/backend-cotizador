@@ -8,7 +8,7 @@ const idValidator = [ param('id').isMongoId().withMessage('ID inválido') ];
 // Validaciones para crear/actualizar
 const companyValidation = [
   body('name').notEmpty().withMessage('El nombre es requerido'),
-   body('nit').notEmpty().withMessage('El NIT es requerido'), // 🆕 agregado
+   body('nit').notEmpty().withMessage('El NIT es requerido'), 
   body('email').notEmpty().isEmail().withMessage('Email institucional inválido'),
   body('logoUrl').optional().isString(),
   body('representative').notEmpty().withMessage('Representative es requerido'),

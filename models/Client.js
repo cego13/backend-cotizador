@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 
 const ClientSchema = new mongoose.Schema({
-  name: { type: String, required: true },       // Nombre del cliente o empresa cliente
-  document: { type: String },                   // NIT o cédula
+  name: { type: String, required: true },       
+  document: { type: String },                   
   address: { type: String },
   city: { type: String },
   country: { type: String, default: 'Colombia' },
   email: { type: String },
   phone: { type: String },
-  contactName: { type: String },                // Persona de contacto
+  contactName: { type: String },                
   contactPosition: { type: String },
   contactEmail: { type: String },
   contactPhone: { type: String },

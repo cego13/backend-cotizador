@@ -6,8 +6,8 @@ const quotationSchema = new mongoose.Schema({
   client: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
   items: [
     {
-      description: { type: String, required: true }, // Descripción corta
-      longDescription: { type: String }, // 👈 Nueva descripción larga
+      description: { type: String, required: true }, 
+      longDescription: { type: String }, 
       quantity: { type: Number, required: true },
       unitPrice: { type: Number, required: true },
       total: { type: Number, required: true },
